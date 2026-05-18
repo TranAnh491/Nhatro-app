@@ -1,0 +1,142 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    background: #F2F2F7;
+    color: #1C1C1E;
+  }
+}
+
+@layer components {
+  /* iOS-style buttons */
+  .btn-ios {
+    @apply inline-flex items-center justify-center gap-2 font-semibold rounded-2xl transition-all duration-150 active:scale-95 select-none;
+  }
+  .btn-primary {
+    @apply btn-ios bg-[#007AFF] hover:bg-[#0066CC] text-white px-5 py-3 text-sm shadow-lg shadow-blue-500/25;
+  }
+  .btn-secondary {
+    @apply btn-ios bg-white/80 hover:bg-white text-[#007AFF] px-5 py-3 text-sm border border-black/[0.08] shadow-sm;
+  }
+  .btn-danger {
+    @apply btn-ios bg-[#FF3B30]/10 hover:bg-[#FF3B30]/20 text-[#FF3B30] px-5 py-3 text-sm;
+  }
+  .btn-success {
+    @apply btn-ios bg-[#34C759] hover:bg-[#28A745] text-white px-5 py-3 text-sm shadow-lg shadow-green-500/25;
+  }
+
+  /* iOS-style input */
+  .input-field {
+    @apply w-full bg-[#F2F2F7] rounded-xl px-4 py-3 text-sm text-[#1C1C1E] placeholder-[#8E8E93]
+           focus:outline-none focus:ring-2 focus:ring-[#007AFF]/50 focus:bg-white
+           transition-all duration-200 border border-transparent;
+  }
+  .input-field-white {
+    @apply w-full bg-white rounded-xl px-4 py-3 text-sm text-[#1C1C1E] placeholder-[#8E8E93]
+           focus:outline-none focus:ring-2 focus:ring-[#007AFF]/50
+           transition-all duration-200 border border-black/[0.06];
+  }
+
+  /* iOS card */
+  .card {
+    @apply bg-white rounded-2xl shadow-sm border border-black/[0.04];
+  }
+  .card-elevated {
+    @apply bg-white rounded-3xl shadow-xl shadow-black/[0.08] border border-black/[0.04];
+  }
+
+  /* Label */
+  .label {
+    @apply block text-xs font-semibold text-[#8E8E93] uppercase tracking-wider mb-1.5;
+  }
+
+  /* iOS section header */
+  .section-header {
+    @apply text-xs font-semibold text-[#8E8E93] uppercase tracking-wider px-1 mb-2;
+  }
+
+  /* Grouped list row */
+  .list-row {
+    @apply flex items-center px-4 py-3.5 bg-white first:rounded-t-2xl last:rounded-b-2xl
+           border-b border-black/[0.05] last:border-0 transition-colors active:bg-gray-50;
+  }
+}
+
+* { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+input[type=number] { -moz-appearance: textfield; }
+
+/* iOS-style scrollbar */
+::-webkit-scrollbar { width: 0; }
+
+/* Smooth momentum scroll */
+.scroll-ios {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Glass tab bar */
+.glass-nav {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-top: 0.5px solid rgba(0,0,0,0.12);
+}
+
+/* Gradient backgrounds */
+.gradient-blue { background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%); }
+.gradient-green { background: linear-gradient(135deg, #34C759 0%, #30D158 100%); }
+.gradient-orange { background: linear-gradient(135deg, #FF9500 0%, #FF6B00 100%); }
+.gradient-red { background: linear-gradient(135deg, #FF3B30 0%, #FF2D55 100%); }
+.gradient-purple { background: linear-gradient(135deg, #5856D6 0%, #AF52DE 100%); }
+.gradient-teal { background: linear-gradient(135deg, #5AC8FA 0%, #007AFF 100%); }
+
+/* Pill badge */
+.badge {
+  @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold;
+}
+
+/* Bottom sheet animation */
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.slide-up { animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1); }
+
+/* Fade in */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+.fade-in { animation: fadeIn 0.2s ease; }
+
+/* Number display */
+.number-display {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* iOS segmented control */
+.segmented {
+  @apply bg-[#E9E9EB] p-1 rounded-xl flex;
+}
+.segmented-item {
+  @apply flex-1 py-1.5 text-sm font-medium rounded-[10px] transition-all duration-200 text-center;
+}
+.segmented-item.active {
+  @apply bg-white shadow-sm text-[#1C1C1E] font-semibold;
+}
+.segmented-item:not(.active) {
+  @apply text-[#8E8E93];
+}
