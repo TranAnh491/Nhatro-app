@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { onAuthStateChanged, signOut } from 'firebase/auth'
-import { ClipboardList, LayoutDashboard, Settings as Cog, LogOut } from 'lucide-react'
+import { onAuthStateChanged, signInAnonymously } from 'firebase/auth'
+import { ClipboardList, LayoutDashboard, Settings as Cog } from 'lucide-react'
 import { auth } from './firebase'
 import {
   subscribeRooms, subscribeSettings, subscribeBills,
@@ -9,8 +9,6 @@ import {
 import DataEntry from './components/DataEntry'
 import Dashboard from './components/Dashboard'
 import Settings from './components/Settings'
-import Login from './components/Login'
-import { storage } from './utils/storage'
 
 const TABS = [
   { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard },
@@ -26,19 +24,25 @@ const DEFAULT_SETTINGS = {
 }
 
 export default function App() {
-  const [user,     setUser]     = useState(undefined) // undefined = loading
+  const [user,     setUser]     = useState(undefined)
   const [tab,      setTab]      = useState('dashboard')
   const [rooms,    setRooms]    = useState([])
   const [bills,    setBills]    = useState([])
   const [settings, setSettings] = useState(DEFAULT_SETTINGS)
 
-  // Auth state
+  // Tự động đăng nhập ẩn, không cần tài khoản
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, u => setUser(u ?? null))
+    const unsub = onAuthStateChanged(auth, async (u) => {
+      if (u) {
+        setUser(u)
+      } else {
+        await signInAnonymously(auth)
+      }
+    })
     return unsub
   }, [])
 
-  // Subscribe to Firestore when logged in
+  // Subscribe Firestore khi đã có user
   useEffect(() => {
     if (!user) return
     const unsubRooms    = subscribeRooms(user.uid, setRooms)
@@ -47,44 +51,33 @@ export default function App() {
     return () => { unsubRooms(); unsubBills(); unsubSettings() }
   }, [user])
 
-  // ── Handlers ────────────────────────────────────────────
-  const handleSaveRoom = async (room) => {
-    await saveRoom(user.uid, room)
-  }
+  const handleSaveRoom = async (room) => saveRoom(user.uid, room)
+
   const handleDeleteRoom = async (id) => {
     await fbDeleteRoom(user.uid, id)
-    // delete related bills
+    const { deleteDoc, doc } = await import('firebase/firestore')
+    const { db } = await import('./firebase')
     const relatedBills = bills.filter(b => b.roomId === id)
-    await Promise.all(relatedBills.map(b =>
-      import('firebase/firestore').then(({ deleteDoc, doc }) =>
-        deleteDoc(doc(import('./firebase').then(m => m.db), `users/${user.uid}/bills/${b.id}`))
-      )
-    ))
-  }
-  const handleSaveBill = async (bill) => {
-    await saveBill(user.uid, bill)
-  }
-  const handleSaveSettings = async (s) => {
-    await fbSaveSettings(user.uid, s)
+    await Promise.all(relatedBills.map(b => deleteDoc(doc(db, `users/${user.uid}/bills/${b.id}`))))
   }
 
-  // ── Loading ──────────────────────────────────────────────
-  if (user === undefined) {
+  const handleSaveBill     = async (bill) => saveBill(user.uid, bill)
+  const handleSaveSettings = async (s)    => fbSaveSettings(user.uid, s)
+
+  // Loading
+  if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center"
            style={{ background: 'linear-gradient(180deg, #007AFF 0%, #0041A8 100%)' }}>
         <div className="text-center text-white">
-          <div className="text-5xl mb-4 animate-bounce">🏠</div>
-          <p className="font-semibold opacity-80">Đang tải...</p>
+          <div className="text-6xl mb-4">🏠</div>
+          <p className="font-semibold text-lg">Đang tải...</p>
+          <p className="text-white/60 text-sm mt-1">Kết nối dữ liệu</p>
         </div>
       </div>
     )
   }
 
-  // ── Not logged in ────────────────────────────────────────
-  if (!user) return <Login />
-
-  // ── Main app ─────────────────────────────────────────────
   const occupied = rooms.filter(r => r.status === 'occupied').length
 
   return (
@@ -99,17 +92,11 @@ export default function App() {
             <p className="text-white/60 text-xs font-medium tracking-wide uppercase">Quản lý</p>
             <h1 className="text-white text-2xl font-bold mt-0.5 leading-tight">{settings.buildingName}</h1>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <div className="text-white/60 text-xs font-medium">Đang thuê</div>
-              <div className="text-white text-3xl font-bold number-display">
-                {occupied}<span className="text-white/50 text-lg font-medium">/{rooms.length}</span>
-              </div>
+          <div className="text-right">
+            <div className="text-white/60 text-xs font-medium">Đang thuê</div>
+            <div className="text-white text-3xl font-bold number-display">
+              {occupied}<span className="text-white/50 text-lg font-medium">/{rooms.length}</span>
             </div>
-            <button onClick={() => signOut(auth)}
-              className="w-9 h-9 bg-white/15 hover:bg-white/25 rounded-2xl flex items-center justify-center transition-colors active:scale-90">
-              <LogOut size={16} className="text-white" />
-            </button>
           </div>
         </div>
 
