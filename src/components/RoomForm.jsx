@@ -37,7 +37,7 @@ export default function RoomForm({ room, settings, onSave, onClose }) {
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
   const handleSubmit = (e) => {
-    e.preventDefault()
+    if (e?.preventDefault) e.preventDefault()
     if (!form.number.trim()) return alert('Vui lòng nhập số phòng')
     onSave({
       ...form,
