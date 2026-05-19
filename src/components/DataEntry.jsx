@@ -8,7 +8,7 @@ import { fmt, monthLabel, contractStatus, getCurrentMonth } from '../utils/helpe
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1)
 const YEARS  = [2024, 2025, 2026, 2027]
 
-export default function DataEntry({ rooms, bills, settings, onRoomsChange, onBillsChange }) {
+export default function DataEntry({ rooms, bills, settings, onSaveRoom, onDeleteRoom, onSaveBill }) {
   const [activeTab,   setActiveTab]   = useState('rooms')
   const [showRoomForm, setShowRoomForm] = useState(false)
   const [editRoom,     setEditRoom]     = useState(null)
@@ -17,22 +17,23 @@ export default function DataEntry({ rooms, bills, settings, onRoomsChange, onBil
   const [month, setMonth] = useState(getCurrentMonth().month)
   const [year,  setYear]  = useState(getCurrentMonth().year)
 
-  const saveRoom = (data) => {
-    if (editRoom) onRoomsChange(rooms.map(r => r.id === editRoom.id ? { ...editRoom, ...data } : r))
-    else          onRoomsChange([...rooms, { ...data, id: uuid() }])
+  const saveRoom = async (data) => {
+    const room = editRoom
+      ? { ...editRoom, ...data }
+      : { ...data, id: uuid() }
+    await onSaveRoom(room)
     setShowRoomForm(false); setEditRoom(null)
   }
 
-  const deleteRoom = (id) => {
+  const deleteRoom = async (id) => {
     if (!confirm('Xoá phòng này? Dữ liệu hoá đơn cũng bị xoá.')) return
-    onRoomsChange(rooms.filter(r => r.id !== id))
-    onBillsChange(bills.filter(b => b.roomId !== id))
+    await onDeleteRoom(id)
   }
 
-  const saveBill = (data) => {
+  const saveBill = async (data) => {
     const existing = bills.find(b => b.roomId === data.roomId && b.month === data.month && b.year === data.year)
-    if (existing) onBillsChange(bills.map(b => b.id === existing.id ? { ...existing, ...data } : b))
-    else          onBillsChange([...bills, { ...data, id: uuid() }])
+    const bill = existing ? { ...existing, ...data } : { ...data, id: uuid() }
+    await onSaveBill(bill)
     setShowBillForm(null)
   }
 
