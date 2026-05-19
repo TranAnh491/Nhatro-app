@@ -109,7 +109,6 @@ export default function Settings({ settings, onSave }) {
       {/* App info */}
       <div className="text-center py-4">
         <p className="text-xs text-[#C7C7CC]">Quản Lý Nhà Trọ · v1.0</p>
-        <p className="text-xs text-[#C7C7CC] mt-0.5">Built with ❤️ by Claude</p>
       </div>
     </div>
   )
