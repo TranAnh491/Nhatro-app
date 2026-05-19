@@ -4,8 +4,11 @@ import { fmt, calcBill, monthLabel } from '../utils/helpers'
 
 const EMPTY = { electricStart: 0, electricEnd: 0, waterStart: 0, waterEnd: 0, otherFees: 0, notes: '', isPaid: false, paidDate: '' }
 
-function MeterSection({ color, Icon, title, unit, priceLabel, start, end, price, calc,
-  onStart, onEnd }) {
+// Format số có dấu phẩy
+const fmtN   = (v) => v === '' || v == null ? '' : Number(String(v).replace(/,/g,'')).toLocaleString('en-US')
+const parseN = (v) => Number(String(v).replace(/,/g,'')) || 0
+
+function MeterSection({ color, Icon, title, unit, priceLabel, start, end, calc, onStart, onEnd }) {
   const used = Math.max(0, Number(end) - Number(start))
   return (
     <div className={`${color} rounded-2xl p-4`}>
@@ -23,7 +26,10 @@ function MeterSection({ color, Icon, title, unit, priceLabel, start, end, price,
         ].map(({ label, val, onChange }) => (
           <div key={label} className="bg-white/60 rounded-xl p-3">
             <p className="text-xs opacity-60 mb-1">{label}</p>
-            <input type="number" value={val} onChange={e => onChange(e.target.value)}
+            <input
+              type="text" inputMode="numeric"
+              value={fmtN(val)}
+              onChange={e => onChange(e.target.value.replace(/[^0-9]/g,''))}
               className="w-full bg-transparent font-bold text-xl number-display focus:outline-none" />
             <p className="text-xs opacity-50 mt-0.5">{unit}</p>
           </div>
@@ -56,9 +62,9 @@ export default function BillForm({ room, bill, month, year, onSave, onClose }) {
     onSave({
       ...form, roomId: room.id, month, year,
       electricPrice: ePrice, waterPrice: wPrice, rentPrice: rPrice,
-      electricStart: Number(form.electricStart), electricEnd: Number(form.electricEnd),
-      waterStart:    Number(form.waterStart),    waterEnd:   Number(form.waterEnd),
-      otherFees:     Number(form.otherFees) || 0,
+      electricStart: parseN(form.electricStart), electricEnd: parseN(form.electricEnd),
+      waterStart:    parseN(form.waterStart),    waterEnd:   parseN(form.waterEnd),
+      otherFees:     parseN(form.otherFees),
     })
   }
 
@@ -108,7 +114,9 @@ export default function BillForm({ room, bill, month, year, onSave, onClose }) {
             <p className="section-header">Phí khác</p>
             <div className="bg-white rounded-2xl px-4 py-3.5 flex items-center border border-black/[0.04]">
               <span className="text-sm text-[#1C1C1E] flex-1 font-medium">Phí phát sinh (₫)</span>
-              <input type="number" value={form.otherFees} onChange={e => set('otherFees', e.target.value)}
+              <input type="text" inputMode="numeric"
+                value={fmtN(form.otherFees)}
+                onChange={e => set('otherFees', e.target.value.replace(/[^0-9]/g,''))}
                 placeholder="0"
                 className="text-right bg-transparent text-[#007AFF] font-semibold w-28 focus:outline-none text-sm" />
             </div>
