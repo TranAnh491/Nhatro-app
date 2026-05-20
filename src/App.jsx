@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import { onAuthStateChanged, signInAnonymously } from 'firebase/auth'
 import { ClipboardList, LayoutDashboard, Settings as Cog } from 'lucide-react'
-import { auth } from './firebase'
+import { db } from './firebase'
 import {
-  subscribeRooms, subscribeSettings, subscribeBills,
-  saveRoom, deleteRoom as fbDeleteRoom, saveBill, saveSettings as fbSaveSettings,
+  subscribeRooms, subscribeBills, subscribeSettings,
+  saveRoom, deleteRoom as fbDeleteRoom,
+  saveBill, saveSettings as fbSaveSettings,
 } from './utils/firestore'
+import { deleteDoc, doc } from 'firebase/firestore'
 import DataEntry from './components/DataEntry'
 import Dashboard from './components/Dashboard'
 import Settings from './components/Settings'
@@ -24,48 +25,33 @@ const DEFAULT_SETTINGS = {
 }
 
 export default function App() {
-  const [user,     setUser]     = useState(undefined)
+  const [ready,    setReady]    = useState(false)
   const [tab,      setTab]      = useState('dashboard')
   const [rooms,    setRooms]    = useState([])
   const [bills,    setBills]    = useState([])
   const [settings, setSettings] = useState(DEFAULT_SETTINGS)
 
-  // Tự động đăng nhập ẩn, không cần tài khoản
+  // Subscribe Firestore — không cần auth, dùng chung 1 path
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (u) => {
-      if (u) {
-        setUser(u)
-      } else {
-        await signInAnonymously(auth)
-      }
-    })
-    return unsub
+    const unsubRooms    = subscribeRooms(data => { setRooms(data); setReady(true) })
+    const unsubBills    = subscribeBills(setBills)
+    const unsubSettings = subscribeSettings(s => setSettings({ ...DEFAULT_SETTINGS, ...s }))
+    return () => { unsubRooms(); unsubBills(); unsubSettings() }
   }, [])
 
-  // Subscribe Firestore khi đã có user
-  useEffect(() => {
-    if (!user) return
-    const unsubRooms    = subscribeRooms(user.uid, setRooms)
-    const unsubBills    = subscribeBills(user.uid, setBills)
-    const unsubSettings = subscribeSettings(user.uid, s => setSettings({ ...DEFAULT_SETTINGS, ...s }))
-    return () => { unsubRooms(); unsubBills(); unsubSettings() }
-  }, [user])
-
-  const handleSaveRoom = async (room) => saveRoom(user.uid, room)
-
-  const handleDeleteRoom = async (id) => {
-    await fbDeleteRoom(user.uid, id)
-    const { deleteDoc, doc } = await import('firebase/firestore')
-    const { db } = await import('./firebase')
+  const handleSaveRoom     = (room)     => saveRoom(room)
+  const handleSaveBill     = (bill)     => saveBill(bill)
+  const handleSaveSettings = (s)        => fbSaveSettings(s)
+  const handleDeleteRoom   = async (id) => {
+    await fbDeleteRoom(id)
     const relatedBills = bills.filter(b => b.roomId === id)
-    await Promise.all(relatedBills.map(b => deleteDoc(doc(db, `users/${user.uid}/bills/${b.id}`))))
+    await Promise.all(relatedBills.map(b =>
+      deleteDoc(doc(db, `nhatro/data/bills/${b.id}`))
+    ))
   }
 
-  const handleSaveBill     = async (bill) => saveBill(user.uid, bill)
-  const handleSaveSettings = async (s)    => fbSaveSettings(user.uid, s)
-
   // Loading
-  if (!user) {
+  if (!ready) {
     return (
       <div className="min-h-screen flex items-center justify-center"
            style={{ background: 'linear-gradient(180deg, #007AFF 0%, #0041A8 100%)' }}>
@@ -84,7 +70,6 @@ export default function App() {
     <div className="flex flex-col h-screen max-w-[430px] mx-auto relative overflow-hidden"
          style={{ background: '#F2F2F7' }}>
 
-      {/* Header */}
       <header className="flex-shrink-0 pt-12 pb-4 px-5"
               style={{ background: 'linear-gradient(180deg, #007AFF 0%, #0055CC 100%)' }}>
         <div className="flex items-end justify-between">
@@ -100,7 +85,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Desktop tab bar */}
         <div className="hidden sm:flex mt-4 bg-white/15 rounded-2xl p-1 gap-1">
           {TABS.map(({ id, label, Icon }) => (
             <button key={id} onClick={() => setTab(id)}
@@ -112,7 +96,6 @@ export default function App() {
         </div>
       </header>
 
-      {/* Content */}
       <main className="flex-1 overflow-y-auto scroll-ios">
         <div className="fade-in" key={tab}>
           {tab === 'dashboard' && <Dashboard rooms={rooms} bills={bills} />}
@@ -124,13 +107,10 @@ export default function App() {
               onSaveBill={handleSaveBill}
             />
           )}
-          {tab === 'settings' && (
-            <Settings settings={settings} onSave={handleSaveSettings} />
-          )}
+          {tab === 'settings' && <Settings settings={settings} onSave={handleSaveSettings} />}
         </div>
       </main>
 
-      {/* Mobile bottom tab bar */}
       <nav className="sm:hidden flex-shrink-0 glass-nav flex items-center px-2"
            style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 8px)', paddingTop: '8px' }}>
         {TABS.map(({ id, label, Icon }) => {
@@ -142,7 +122,7 @@ export default function App() {
                 <Icon size={24} strokeWidth={active ? 2.5 : 1.8}
                   className={active ? 'text-[#007AFF]' : 'text-[#8E8E93]'} />
               </div>
-              <span className={`text-[10px] font-semibold leading-none transition-colors duration-200
+              <span className={`text-[10px] font-semibold leading-none transition-colors
                 ${active ? 'text-[#007AFF]' : 'text-[#8E8E93]'}`}>
                 {label}
               </span>
